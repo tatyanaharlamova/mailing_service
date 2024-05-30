@@ -22,13 +22,22 @@ from django_apscheduler.jobstores import DjangoJobStore
 from django_apscheduler.models import DjangoJobExecution
 from django_apscheduler import util
 
-from distribution.tasks import daily_tasks, weekly_tasks, monthly_tasks
+from mailing.tasks import daily_tasks, weekly_tasks, monthly_tasks
+
+logger = logging.getLogger(__name__)
+
+
+@util.close_old_connections
+def delete_old_job_executions(max_age=604_800):
+    DjangoJobExecution.objects.delete_old_job_executions(max_age)
 
 
 class Command(BaseCommand):
+    """Класс для запуска планировщика задач APScheduler"""
     help = "Runs APScheduler."
 
     def handle(self, *args, **options):
+        """Запускает планировщик задач"""
         scheduler = BlockingScheduler(timezone=settings.TIME_ZONE)
         scheduler.add_jobstore(DjangoJobStore(), "default")
 
@@ -39,6 +48,7 @@ class Command(BaseCommand):
             max_instances=1,
             replace_existing=True,
         )
+        logger.info("Added job 'daily_job'.")
 
         scheduler.add_job(
             weekly_tasks,
@@ -47,6 +57,7 @@ class Command(BaseCommand):
             max_instances=1,
             replace_existing=True,
         )
+        logger.info("Added job 'weekly_job'.")
 
         scheduler.add_job(
             monthly_tasks,
@@ -55,13 +66,25 @@ class Command(BaseCommand):
             max_instances=1,
             replace_existing=True,
         )
+        logger.info("Added job 'monthly_job'.")
 
         scheduler.add_job(
             delete_old_job_executions,
             trigger=CronTrigger(
                 day_of_week="mon", hour="00", minute="00"
-            ),  # Midnight on Monday, before start of the next work week.
+            ),  # полночь понедельника
             id="delete_old_job_executions",
             max_instances=1,
             replace_existing=True,
         )
+        logger.info(
+            "Added weekly job: 'delete_old_job_executions'."
+        )
+
+        try:
+            logger.info("Starting scheduler...")
+            scheduler.start()
+        except KeyboardInterrupt:
+            logger.info("Stopping scheduler...")
+            scheduler.shutdown()
+            logger.info("Scheduler shut down successfully!")

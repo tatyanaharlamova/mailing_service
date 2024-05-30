@@ -4,18 +4,19 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 
+
 from mailing.models import Mailing, Log
 
 
 def send_mailing(mailing):
     now = timezone.localtime(timezone.now())
-    if mailing.start_time <= now <= mailing.end_time:
+    if mailing.start_date <= now <= mailing.end_date:
         for message in mailing.messages.all():
             for client in mailing.clients.all():
                 try:
                     result = send_mail(
                         subject=message.title,
-                        message=message.text,
+                        message=message.message,
                         from_email=settings.EMAIL_HOST_USER,
                         recipient_list=[client.email],
                         fail_silently=False
@@ -44,5 +45,5 @@ def send_mailing(mailing):
         mailing.save()
 
 
-m = Mailing.objects.get(id=1)
-send_mailing(m)
+# m = Mailing.objects.get(id=1)
+# send_mailing(m)
