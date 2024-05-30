@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.urls import reverse_lazy, reverse
 from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView
 
-from mailing.models import Client, Message, Mailing
+from mailing.models import Client, Message, Mailing, Log
 from mailing.services import send_mailing
 
 
@@ -144,3 +144,8 @@ class MailingDeleteView(DeleteView):
     success_url = reverse_lazy('mailing:mailings_list')
 
 
+class LogListView(ListView):
+    """
+    Контроллер отвечающий за отображение списка логов
+    """
+    model = Log

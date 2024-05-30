@@ -13,7 +13,7 @@
                 <div class="card-body">
                     <p class="card-text">Заголовок: {{ message.title }}</p>
                     <p class="card-text">Сообщение: {{ message.message }}</p>
-                    <p class="card-text">Рассылка: {{ message:mailing }}</p>
+                    <p class="card-text">Рассылка: {{ message.mailing }}</p>
                     <a href="{% url 'mailing:messages_list' %}" class="btn btn-warning">Назад</a>
                 </div>
             </div>

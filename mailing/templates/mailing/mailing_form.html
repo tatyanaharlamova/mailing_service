@@ -7,7 +7,15 @@
                 <div class="card-body">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        {{ form.as_p }}
+                        {% for field in form %}
+                        <div class="form-group">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                            <small class="form-text text-muted">{{ field.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
                         <button type="submit" class="btn btn-success">
                             {% if object %}
                             Сохранить
