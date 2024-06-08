@@ -72,7 +72,7 @@ class Mailing(models.Model):
         verbose_name="Дата окончания", **NULLABLE, help_text="не обязательное поле"
     )
 
-    clients = models.ManyToManyField(Client, verbose_name="Клиенты для рассылки")
+    clients = models.ManyToManyField(Client, related_name='mailing', verbose_name="Клиенты для рассылки")
 
     def __str__(self):
         return f"{self.name} {self.status}, время работы: {self.start_date} - {self.end_date}"

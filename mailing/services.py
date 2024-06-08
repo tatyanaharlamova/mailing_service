@@ -1,4 +1,6 @@
 from smtplib import SMTPException
+import os
+import django
 
 from django.core.mail import send_mail
 from django.conf import settings
@@ -6,6 +8,8 @@ from django.utils import timezone
 
 
 from mailing.models import Mailing, Log
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+django.setup()
 
 
 def send_mailing(mailing):
@@ -44,6 +48,6 @@ def send_mailing(mailing):
         mailing.status = Mailing.COMPLETED
         mailing.save()
 
-
+#
 # m = Mailing.objects.get(id=1)
 # send_mailing(m)
