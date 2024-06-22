@@ -1,8 +1,10 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import render
 from django.urls import reverse_lazy, reverse
 from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView
 
-from mailing.forms import ClientForm, MessageForm, MailingForm
+from mailing.forms import ClientForm, MessageForm, MailingForm, ManagerMailingForm
 from mailing.models import Client, Message, Mailing, Log
 from mailing.services import send_mailing
 
@@ -103,21 +105,36 @@ class MessageDeleteView(DeleteView):
     success_url = reverse_lazy('mailing:messages_list')
 
 
-class MailingListView(ListView):
+class MailingListView(LoginRequiredMixin, ListView):
     """
     Контроллер отвечающий за отображение списка рассылок
     """
     model = Mailing
 
+    def get_queryset(self, queryset=None):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if user.is_superuser and not user.has_perm("view_all_mailings"):
+            raise PermissionDenied
+        else:
+            return queryset
 
-class MailingDetailView(DetailView):
+
+class MailingDetailView(LoginRequiredMixin, DetailView):
     """
     Контроллер отвечающий за отображение рассылки
     """
     model = Mailing
 
+    def get_object(self, queryset=None):
+        self.object = super().get_object(queryset)
+        if (self.request.user == self.object.owner or self.request.user.is_superuser or
+                self.request.user.has_perm("view_all_mailings")):
+            return self.object
+        raise PermissionDenied
 
-class MailingCreateView(CreateView):
+
+class MailingCreateView(LoginRequiredMixin,CreateView):
     """
     Контроллер отвечающий за создание рассылки
     """
@@ -125,8 +142,15 @@ class MailingCreateView(CreateView):
     form_class = MailingForm
     success_url = reverse_lazy('mailing:mailings_list')
 
+    def form_valid(self, form):
+        mailing = form.save()
+        user = self.request.user
+        mailing.owner = user
+        mailing.save()
+        return super().form_valid(form)
 
-class MailingUpdateView(UpdateView):
+
+class MailingUpdateView(LoginRequiredMixin, UpdateView):
     """
     Контроллер отвечающий за редактирование рассылки
     """
@@ -136,6 +160,18 @@ class MailingUpdateView(UpdateView):
     def get_success_url(self):
         return reverse('mailing:view_mailing', args=[self.kwargs.get('pk')])
 
+    def get_form_class(self):
+        """
+        Функция, определяющая поля для редактирования в зависимости от прав пользователя
+        """
+        user = self.request.user
+        if user == self.object.owner or user.is_superuser:
+            return MailingForm
+        elif user.has_perm('mailing.deactivate_mailing'):
+            return ManagerMailingForm
+        else:
+            raise PermissionDenied
+
 
 class MailingDeleteView(DeleteView):
     """
@@ -143,6 +179,12 @@ class MailingDeleteView(DeleteView):
     """
     model = Mailing
     success_url = reverse_lazy('mailing:mailings_list')
+
+    def get_object(self, queryset=None):
+        self.object = super().get_object(queryset)
+        if self.request.user == self.object.owner or self.request.user.is_superuser:
+            return self.object
+        raise PermissionDenied
 
 
 class LogListView(ListView):

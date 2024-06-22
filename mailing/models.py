@@ -1,5 +1,7 @@
 from django.db import models
 
+from users.models import User
+
 NULLABLE = {"null": True, "blank": True}
 
 
@@ -73,6 +75,7 @@ class Mailing(models.Model):
     )
 
     clients = models.ManyToManyField(Client, related_name='mailing', verbose_name="Клиенты для рассылки")
+    owner = models.ForeignKey(User, verbose_name='Владелец',  on_delete=models.SET_NULL, **NULLABLE)
 
     def __str__(self):
         return f"{self.name} {self.status}, время работы: {self.start_date} - {self.end_date}"
@@ -81,6 +84,10 @@ class Mailing(models.Model):
         verbose_name = "Рассылка"
         verbose_name_plural = "Рассылки"
         ordering = ("name",)
+        permissions = [
+            ('deactivate_mailing', 'Can deactivate mailing'),
+            ('view_all_mailings', 'Can view all mailings'),
+        ]
 
 
 class Log(models.Model):
