@@ -20,7 +20,7 @@ class ClientForm(StyleFormMixin, forms.ModelForm):
 class MailingForm(StyleFormMixin, forms.ModelForm):
     class Meta:
         model = Mailing
-        fields = '__all__'
+        exclude = ('owner',)
 
 
 class MessageForm(StyleFormMixin, forms.ModelForm):
@@ -45,3 +45,9 @@ class MessageForm(StyleFormMixin, forms.ModelForm):
                 raise forms.ValidationError('Недопустимое слово в сообщении!')
 
         return cleaned_data
+
+
+class ManagerMailingForm(StyleFormMixin, forms.ModelForm):
+    class Meta:
+        model = Mailing
+        fields = ('status',)

@@ -3,11 +3,15 @@
 <section class="jumbotron text-center">
     <div class="container">
         <h1 class="jumbotron-heading">Сервис управления рассылками</h1>
-        <p class="lead text-muted">Something short and leading about the collection below—its contents, the creator,
-            etc. Make it short and sweet, but not too short so folks don't simply skip over it entirely.</p>
+        <p class="lead text-muted">С помощью нашего сервиса вы можете создать email-рассылку для своих клиентов.</p>
         <p>
-            <a href="#" class="btn btn-primary my-2">Main call to action</a>
-            <a href="#" class="btn btn-secondary my-2">Secondary action</a>
+            {% if user.is_authenticated %}
+            {% else %}
+            <a href="{% url 'users:login' %}" class="btn btn-primary my-2">Вход</a>
+            <a href="{% url 'users:register' %}" class="btn btn-primary my-2">Регистрация</a>
+            {% endif %}
+
+
         </p>
     </div>
 </section>
