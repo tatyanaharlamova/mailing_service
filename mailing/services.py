@@ -1,13 +1,15 @@
 from smtplib import SMTPException
 import os
 import django
+from django.core.cache import cache
 
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 
+from config.settings import CACHE_ENABLED
+from mailing.models import Mailing, Log, Message
 
-from mailing.models import Mailing, Log
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
@@ -51,3 +53,20 @@ def send_mailing(mailing):
 #
 # m = Mailing.objects.get(id=1)
 # send_mailing(m)
+
+
+def get_messages_from_cache():
+    """
+    Получение списка сообщений из кэша. Если кэш пуст,то получение из БД.
+    """
+    if not CACHE_ENABLED:
+        return Message.objects.all()
+    else:
+        key = 'categories_list'
+        messages = cache.get(key)
+        if messages is not None:
+            return messages
+        else:
+            messages = Message.objects.all()
+            cache.set(key, messages)
+            return messages
