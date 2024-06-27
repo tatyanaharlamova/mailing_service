@@ -6,7 +6,7 @@ from django.views.generic import CreateView, ListView, DetailView, UpdateView, D
 
 from mailing.forms import ClientForm, MessageForm, MailingForm, ManagerMailingForm
 from mailing.models import Client, Message, Mailing, Log
-from mailing.services import send_mailing
+from mailing.services import send_mailing, get_messages_from_cache
 
 
 def index(request):
@@ -68,6 +68,9 @@ class MessageListView(ListView):
     Контроллер отвечающий за отображение списка сообщений
     """
     model = Message
+
+    def get_queryset(self):
+        return get_messages_from_cache()
 
 
 class MessageDetailView(DetailView):
