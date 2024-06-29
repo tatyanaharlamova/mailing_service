@@ -25,7 +25,7 @@
                         <a class="btn btn-primary" href="{% url 'mailing:edit_mailing' mailing.pk %}"
                            role="button">Редактировать</a>
                         {% endif %}
-                        {% if user == mailing.owner %}
+                        {% if user == mailing.owner or user.is_superuser %}
                         <a class="btn btn-primary" href="{% url 'mailing:delete_mailing' mailing.pk %}" role="button">Удалить</a>
                         {% endif %}
                     </div>
