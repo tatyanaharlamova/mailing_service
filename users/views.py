@@ -3,6 +3,7 @@ import string
 
 from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.mixins import PermissionRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.shortcuts import redirect, get_object_or_404, render
 from django.urls import reverse, reverse_lazy
@@ -82,14 +83,6 @@ class UserListView(PermissionRequiredMixin, ListView):
     model = User
     permission_required = 'users.view_all_users'
 
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_superuser:
-            queryset = super().get_queryset().exclude(pk=user.pk)
-        else:
-            queryset = super().get_queryset().exclude(pk=user.pk).exclude(is_superuser=True).exclude(is_staff=True)
-        return queryset
-
 
 @permission_required('users.deactivate_user')
 def toggle_activity(request, pk):
@@ -99,4 +92,4 @@ def toggle_activity(request, pk):
     else:
         user.is_active = True
     user.save()
-    return redirect(reverse('users:view_all_users'))
+    return redirect(reverse('users:users_list'))

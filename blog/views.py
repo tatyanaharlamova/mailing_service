@@ -1,3 +1,4 @@
+from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.urls import reverse_lazy, reverse
 from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView
 from pytils.translit import slugify
@@ -7,13 +8,14 @@ from blog.models import BlogArticle
 from blog.services import get_articles_from_cache
 
 
-class BlogArticleCreateView(CreateView):
+class BlogArticleCreateView(PermissionRequiredMixin, CreateView):
     """
     Контроллер, который отвечает за создание статьи блога
     """
     model = BlogArticle
     form_class = BlogArticleForm
     success_url = reverse_lazy('blog:list')
+    permission_required = 'blog.add_blogarticle'
 
     def form_valid(self, form):
         if form.is_valid():
@@ -47,12 +49,13 @@ class BlogArticleDetailView(DetailView):
         return self.object
 
 
-class BlogArticleUpdateView(UpdateView):
+class BlogArticleUpdateView(PermissionRequiredMixin, UpdateView):
     """
     Контроллер, который отвечает за редактирование статьи блога
     """
     model = BlogArticle
     form_class = BlogArticleForm
+    permission_required = 'blog.change_blogarticle'
 
     def form_valid(self, form):
         if form.is_valid():
@@ -65,9 +68,10 @@ class BlogArticleUpdateView(UpdateView):
         return reverse('blog:view', args=[self.kwargs.get('pk')])
 
 
-class BlogArticleDeleteView(DeleteView):
+class BlogArticleDeleteView(PermissionRequiredMixin, DeleteView):
     """
     Контроллер, который отвечает за удаление статьи блога
     """
     model = BlogArticle
     success_url = reverse_lazy('blog:list')
+    permission_required = 'blog.delete_blogarticle'

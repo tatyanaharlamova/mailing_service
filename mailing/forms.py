@@ -14,7 +14,7 @@ class StyleFormMixin:
 class ClientForm(StyleFormMixin, forms.ModelForm):
     class Meta:
         model = Client
-        fields = '__all__'
+        exclude = ('owner',)
 
 
 class MailingForm(StyleFormMixin, forms.ModelForm):
@@ -23,10 +23,16 @@ class MailingForm(StyleFormMixin, forms.ModelForm):
         exclude = ('owner',)
 
 
+class ManagerMailingForm(StyleFormMixin, forms.ModelForm):
+    class Meta:
+        model = Mailing
+        fields = ('status',)
+
+
 class MessageForm(StyleFormMixin, forms.ModelForm):
     class Meta:
         model = Message
-        fields = '__all__'
+        exclude = ('owner',)
 
     def clean_title(self):
         cleaned_data = self.cleaned_data['title']
@@ -45,9 +51,3 @@ class MessageForm(StyleFormMixin, forms.ModelForm):
                 raise forms.ValidationError('Недопустимое слово в сообщении!')
 
         return cleaned_data
-
-
-class ManagerMailingForm(StyleFormMixin, forms.ModelForm):
-    class Meta:
-        model = Mailing
-        fields = ('status',)
