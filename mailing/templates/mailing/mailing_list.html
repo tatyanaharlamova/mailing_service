@@ -18,8 +18,10 @@
                 <p class="card-text">Периодичность: {{ mailing.periodicity }}</p>
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="btn-group">
-                        {% if perms.mailing.deactivate_mailing or user == mailing.owner %}
+                        {% if perms.mailing.view_all_mailings or user == mailing.owner or user.is_superuser %}
                         <a class="btn btn-primary" href="{% url 'mailing:view_mailing' mailing.pk %}" role="button">Просмотр</a>
+                        {% endif %}
+                        {% if perms.mailing.deactivate_mailing or user == mailing.owner or user.is_superuser %}
                         <a class="btn btn-primary" href="{% url 'mailing:edit_mailing' mailing.pk %}"
                            role="button">Редактировать</a>
                         {% endif %}

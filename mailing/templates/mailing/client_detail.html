@@ -14,7 +14,9 @@
                     <p class="card-text">Имя клиента: {{ client.name }}</p>
                     <p class="card-text">Email: {{ client.email }}</p>
                     <p class="card-text">Комментарий: {{ client.comment }}</p>
-                    <a href="{% url 'mailing:clients_list' %}" class="btn btn-warning">Назад</a>
+                    <p class="card-text">Добавил клиента: {{ client.owner }}</p>
+                    <a class="btn btn-primary" href="{% url 'mailing:clients_list' %}" role="button">Назад</a>
+
                 </div>
             </div>
         </div>

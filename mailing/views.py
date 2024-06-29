@@ -4,33 +4,56 @@ from django.shortcuts import render
 from django.urls import reverse_lazy, reverse
 from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView
 
+from blog.services import get_articles_from_cache
 from mailing.forms import ClientForm, MessageForm, MailingForm, ManagerMailingForm
-from mailing.models import Client, Message, Mailing, Log
-from mailing.services import send_mailing, get_messages_from_cache
+from mailing.models import Message, Log
+from mailing.services import get_messages_from_cache
 
 
-def index(request):
+from django.views.generic import TemplateView
+
+from mailing.models import Mailing, Client
+
+
+class HomeView(TemplateView):
     """
-    Контроллер главной страницы
+    Контроллер главной страницы сайта
     """
-    return render(request, 'mailing/index.html')
+    template_name = 'mailing/index.html'
+
+    def get_context_data(self, **kwargs):
+        context_data = super().get_context_data(**kwargs)
+        mailings = Mailing.objects.all()
+        clients = Client.objects.all()
+        context_data['all_mailings'] = mailings.count()
+        context_data['active_mailings'] = mailings.filter(status=Mailing.STARTED).count()
+        context_data['active_clients'] = clients.values('email').distinct().count()
+
+        context_data['random_blogs'] = get_articles_from_cache().order_by('created_at')[:3]
+        return context_data
 
 
-class ClientListView(ListView):
+class ClientListView(LoginRequiredMixin, ListView):
     """
     Контроллер отвечающий за отображение списка клиентов
     """
     model = Client
 
 
-class ClientDetailView(DetailView):
+class ClientDetailView(LoginRequiredMixin, DetailView):
     """
     Контроллер отвечающий за отображение клиента
     """
     model = Client
 
+    def get_object(self, queryset=None):
+        self.object = super().get_object(queryset)
+        if self.request.user == self.object.owner or self.request.user.is_superuser:
+            return self.object
+        raise PermissionDenied
 
-class ClientCreateView(CreateView):
+
+class ClientCreateView(LoginRequiredMixin, CreateView):
     """
     Контроллер отвечающий за создание клиента
     """
@@ -39,12 +62,14 @@ class ClientCreateView(CreateView):
     success_url = reverse_lazy('mailing:clients_list')
 
     def form_valid(self, form):
-        obj = form.save()
-        send_mailing(obj)
+        client = form.save()
+        user = self.request.user
+        client.owner = user
+        client.save()
         return super().form_valid(form)
 
 
-class ClientUpdateView(UpdateView):
+class ClientUpdateView(LoginRequiredMixin, UpdateView):
     """
     Контроллер отвечающий за редактирование клиента
     """
@@ -54,16 +79,28 @@ class ClientUpdateView(UpdateView):
     def get_success_url(self):
         return reverse('mailing:view', args=[self.kwargs.get('pk')])
 
+    def get_object(self, queryset=None):
+        self.object = super().get_object(queryset)
+        if self.request.user == self.object.owner or self.request.user.is_superuser:
+            return self.object
+        raise PermissionDenied
 
-class ClientDeleteView(DeleteView):
+
+class ClientDeleteView(LoginRequiredMixin, DeleteView):
     """
     Контроллер отвечающий за удаление клиента
     """
     model = Client
     success_url = reverse_lazy('mailing:clients_list')
 
+    def get_object(self, queryset=None):
+        self.object = super().get_object(queryset)
+        if self.request.user == self.object.owner or self.request.user.is_superuser:
+            return self.object
+        raise PermissionDenied
 
-class MessageListView(ListView):
+
+class MessageListView(LoginRequiredMixin, ListView):
     """
     Контроллер отвечающий за отображение списка сообщений
     """
@@ -73,14 +110,20 @@ class MessageListView(ListView):
         return get_messages_from_cache()
 
 
-class MessageDetailView(DetailView):
+class MessageDetailView(LoginRequiredMixin, DetailView):
     """
     Контроллер отвечающий за отображение сообщения
     """
     model = Message
 
+    def get_object(self, queryset=None):
+        self.object = super().get_object(queryset)
+        if self.request.user == self.object.owner or self.request.user.is_superuser:
+            return self.object
+        raise PermissionDenied
 
-class MessageCreateView(CreateView):
+
+class MessageCreateView(LoginRequiredMixin, CreateView):
     """
     Контроллер отвечающий за создание сообщения
     """
@@ -88,8 +131,15 @@ class MessageCreateView(CreateView):
     form_class = MessageForm
     success_url = reverse_lazy('mailing:messages_list')
 
+    def form_valid(self, form):
+        message = form.save()
+        user = self.request.user
+        message.owner = user
+        message.save()
+        return super().form_valid(form)
 
-class MessageUpdateView(UpdateView):
+
+class MessageUpdateView(LoginRequiredMixin, UpdateView):
     """
     Контроллер отвечающий за редактирование сообщение
     """
@@ -99,13 +149,25 @@ class MessageUpdateView(UpdateView):
     def get_success_url(self):
         return reverse('mailing:view_message', args=[self.kwargs.get('pk')])
 
+    def get_object(self, queryset=None):
+        self.object = super().get_object(queryset)
+        if self.request.user == self.object.owner or self.request.user.is_superuser:
+            return self.object
+        raise PermissionDenied
 
-class MessageDeleteView(DeleteView):
+
+class MessageDeleteView(LoginRequiredMixin, DeleteView):
     """
     Контроллер отвечающий за удаление сообщения
     """
     model = Message
     success_url = reverse_lazy('mailing:messages_list')
+
+    def get_object(self, queryset=None):
+        self.object = super().get_object(queryset)
+        if self.request.user == self.object.owner or self.request.user.is_superuser:
+            return self.object
+        raise PermissionDenied
 
 
 class MailingListView(LoginRequiredMixin, ListView):
@@ -131,8 +193,8 @@ class MailingDetailView(LoginRequiredMixin, DetailView):
 
     def get_object(self, queryset=None):
         self.object = super().get_object(queryset)
-        if (self.request.user == self.object.owner or self.request.user.is_superuser or
-                self.request.user.has_perm("view_all_mailings")):
+        user = self.request.user
+        if user.has_perm("view_all_mailings") or user.is_superuser or user == self.object.owner:
             return self.object
         raise PermissionDenied
 
@@ -176,7 +238,7 @@ class MailingUpdateView(LoginRequiredMixin, UpdateView):
             raise PermissionDenied
 
 
-class MailingDeleteView(DeleteView):
+class MailingDeleteView(LoginRequiredMixin, DeleteView):
     """
     Контроллер отвечающий за удаление расылки
     """
@@ -190,7 +252,7 @@ class MailingDeleteView(DeleteView):
         raise PermissionDenied
 
 
-class LogListView(ListView):
+class LogListView(LoginRequiredMixin, ListView):
     """
     Контроллер отвечающий за отображение списка логов
     """
