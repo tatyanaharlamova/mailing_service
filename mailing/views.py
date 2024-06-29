@@ -196,7 +196,8 @@ class MailingDetailView(LoginRequiredMixin, DetailView):
         user = self.request.user
         if user.has_perm("view_all_mailings") or user.is_superuser or user == self.object.owner:
             return self.object
-        raise PermissionDenied
+        else:
+            raise PermissionDenied
 
 
 class MailingCreateView(LoginRequiredMixin,CreateView):
