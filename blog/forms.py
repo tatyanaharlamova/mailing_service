@@ -15,4 +15,3 @@ class BlogArticleForm(StyleFormMixin, forms.ModelForm):
     class Meta:
         model = BlogArticle
         fields = '__all__'
-

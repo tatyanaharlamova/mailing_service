@@ -26,6 +26,23 @@ class Client(models.Model):
         ordering = ("name",)
 
 
+class Message(models.Model):
+    """
+    Модель для хранения информации о сообщении для рассылки
+    """
+
+    title = models.CharField(max_length=255, verbose_name="Тема")
+    message = models.TextField(verbose_name="Сообщение")
+    owner = models.ForeignKey(User, verbose_name='Владелец', on_delete=models.SET_NULL, **NULLABLE)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = "Сообщение"
+        verbose_name_plural = "Сообщения"
+
+
 class Mailing(models.Model):
     """
     Модель для хранения информации о рассылке
@@ -76,10 +93,11 @@ class Mailing(models.Model):
     )
 
     clients = models.ManyToManyField(Client, related_name='mailing', verbose_name="Клиенты для рассылки")
+    message = models.ForeignKey(Message, verbose_name='Cообщение', on_delete=models.CASCADE, **NULLABLE)
     owner = models.ForeignKey(User, verbose_name='Владелец',  on_delete=models.SET_NULL, **NULLABLE)
 
     def __str__(self):
-        return f"{self.name} {self.status}, время работы: {self.start_date} - {self.end_date}"
+        return f"{self.name}, статус: {self.status}"
 
     class Meta:
         verbose_name = "Рассылка"
@@ -93,7 +111,7 @@ class Mailing(models.Model):
 
 class Log(models.Model):
     """
-    Модель для хранения информации о логах рассылок
+    Модель для хранения информации о попытках рассылок
     """
 
     time = models.DateTimeField(
@@ -104,29 +122,10 @@ class Log(models.Model):
         max_length=150, verbose_name="Ответ сервера почтового сервиса", **NULLABLE
     )
     mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, verbose_name="Рассылка")
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, verbose_name="Клиент")
 
     def __str__(self):
-        return f"{self.client} {self.mailing} {self.time} {self.status} {self.server_response}"
+        return f"{self.mailing} {self.time} {self.status} {self.server_response}"
 
     class Meta:
-        verbose_name = "Лог рассылки"
-        verbose_name_plural = "Логи рассылок"
-
-
-class Message(models.Model):
-    """
-    Модель для хранения информации о сообщении для рассылки
-    """
-
-    title = models.CharField(max_length=255, verbose_name="Тема")
-    message = models.TextField(verbose_name="Сообщение")
-    mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, verbose_name='Рассылка')
-    owner = models.ForeignKey(User, verbose_name='Владелец', on_delete=models.SET_NULL, **NULLABLE)
-
-    def __str__(self):
-        return self.title
-
-    class Meta:
-        verbose_name = "Сообщение"
-        verbose_name_plural = "Сообщения"
+        verbose_name = "Попытка рассылки"
+        verbose_name_plural = "Попытки рассылки"

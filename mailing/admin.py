@@ -11,7 +11,7 @@ class ClientAdmin(admin.ModelAdmin):
 
 @admin.register(Mailing)
 class MailingAdmin(admin.ModelAdmin):
-    list_display = ('name', 'status', 'periodicity', 'start_date', 'end_date')
+    list_display = ('name', 'status', 'periodicity', 'start_date', 'owner', )
     search_fields = ('name',)
     list_filter = ('status',)
 
@@ -24,6 +24,6 @@ class MessageAdmin(admin.ModelAdmin):
 
 @admin.register(Log)
 class LogAdmin(admin.ModelAdmin):
-    list_display = ('time', 'status', 'server_response', 'client', 'mailing')
+    list_display = ('time', 'status', 'server_response', 'mailing')
     search_fields = ('client',)
     list_filter = ('status',)
