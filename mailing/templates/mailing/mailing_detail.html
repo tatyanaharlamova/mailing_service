@@ -18,6 +18,7 @@
                     <p class="card-text">Дата создания: {{ mailing.created_at }}</p>
                     <p class="card-text">Дата окончания: {{ mailing.end_date }}</p>
                     <p class="card-text">Владелец: {{ mailing.owner }}</p>
+                    <p class="card-text">Сообщение: {{ mailing.message }}</p>
                     <p class="card-text">Клиенты: </p>
                     {% for client in mailing.clients.all %}
                         <p class="card-text"> {{ client.name }}</p>

@@ -8,6 +8,7 @@
         <p>
             {% if user.is_authenticated %}
             <a href="{% url 'mailing:create' %}" class="btn btn-primary my-2">Добавить клиента</a>
+            <a href="{% url 'mailing:create_message' %}" class="btn btn-primary my-2">Добавить сообщение</a>
             <a href="{% url 'mailing:create_mailing' %}" class="btn btn-primary my-2">Создать рассылку</a>
             {% else %}
             <a href="{% url 'users:login' %}" class="btn btn-primary my-2">Вход</a>

@@ -1,13 +1,11 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import render
 from django.urls import reverse_lazy, reverse
 from django.views.generic import CreateView, ListView, DetailView, UpdateView, DeleteView
 
 from blog.services import get_articles_from_cache
 from mailing.forms import ClientForm, MessageForm, MailingForm, ManagerMailingForm
 from mailing.models import Message, Log
-from mailing.services import get_messages_from_cache
 
 
 from django.views.generic import TemplateView
@@ -29,7 +27,7 @@ class HomeView(TemplateView):
         context_data['active_mailings'] = mailings.filter(status=Mailing.STARTED).count()
         context_data['active_clients'] = clients.values('email').distinct().count()
 
-        context_data['random_blogs'] = get_articles_from_cache().order_by('created_at')[:3]
+        context_data['random_blogs'] = get_articles_from_cache().order_by('?')[:3]
         return context_data
 
 
@@ -38,6 +36,13 @@ class ClientListView(LoginRequiredMixin, ListView):
     Контроллер отвечающий за отображение списка клиентов
     """
     model = Client
+
+    def get_queryset(self, queryset=None):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if not user.is_superuser and not user.groups.filter(name='manager'):
+            queryset = queryset.filter(owner=self.request.user)
+        return queryset
 
 
 class ClientDetailView(LoginRequiredMixin, DetailView):
@@ -106,8 +111,12 @@ class MessageListView(LoginRequiredMixin, ListView):
     """
     model = Message
 
-    def get_queryset(self):
-        return get_messages_from_cache()
+    def get_queryset(self, queryset=None):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if not user.is_superuser and not user.groups.filter(name='manager'):
+            queryset = queryset.filter(owner=self.request.user)
+        return queryset
 
 
 class MessageDetailView(LoginRequiredMixin, DetailView):
@@ -179,10 +188,9 @@ class MailingListView(LoginRequiredMixin, ListView):
     def get_queryset(self, queryset=None):
         queryset = super().get_queryset()
         user = self.request.user
-        if user.is_superuser and not user.has_perm("view_all_mailings"):
-            raise PermissionDenied
-        else:
-            return queryset
+        if not user.is_superuser and not user.groups.filter(name='manager'):
+            queryset = queryset.filter(owner=self.request.user)
+        return queryset
 
 
 class MailingDetailView(LoginRequiredMixin, DetailView):
@@ -194,13 +202,13 @@ class MailingDetailView(LoginRequiredMixin, DetailView):
     def get_object(self, queryset=None):
         self.object = super().get_object(queryset)
         user = self.request.user
-        if user.has_perm("view_all_mailings") or user.is_superuser or user == self.object.owner:
-            return self.object
-        else:
+        if not user.is_superuser and not user.groups.filter(name='manager') and user != self.object.owner:
             raise PermissionDenied
+        else:
+            return self.object
 
 
-class MailingCreateView(LoginRequiredMixin,CreateView):
+class MailingCreateView(LoginRequiredMixin, CreateView):
     """
     Контроллер отвечающий за создание рассылки
     """
@@ -255,6 +263,6 @@ class MailingDeleteView(LoginRequiredMixin, DeleteView):
 
 class LogListView(LoginRequiredMixin, ListView):
     """
-    Контроллер отвечающий за отображение списка логов
+    Контроллер отвечающий за отображение списка попыток рассылок
     """
     model = Log
