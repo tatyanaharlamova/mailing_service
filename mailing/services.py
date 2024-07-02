@@ -18,40 +18,44 @@ def send_mailing():
     """
     zone = pytz.timezone(settings.TIME_ZONE)
     current_datetime = datetime.now(zone)
-    mailings = Mailing.objects.filter(next_send_time__lte=current_datetime,
-                                      status__in=[Mailing.STARTED, Mailing.CREATED])
+    mailings = Mailing.objects.filter(status__in=[Mailing.STARTED, Mailing.CREATED])
+
     for mailing in mailings:
-        # if mailing.end_date and current_datetime >= mailing.end_date:
-        #     mailing.status = Mailing.COMPLETED
-        #     mailing.save()
-        #     continue  # Пропустить отправку, если end_date достигнут
+        # Если достигли end_date, завершить рассылку
+        if mailing.end_date and current_datetime >= mailing.end_date:
+            mailing.status = Mailing.COMPLETED
+            mailing.save()
+            continue  # Пропустить отправку, если end_date достигнут
 
-        mailing.status = Mailing.STARTED
-        clients = mailing.clients.all()
-        try:
-            server_response = send_mail(
-                subject=mailing.message.title,
-                message=mailing.message.message,
-                from_email=settings.EMAIL_HOST_USER,
-                recipient_list=[client.email for client in clients],
-                fail_silently=False,
-            )
-            Log.objects.create(status=Log.SUCCESS,
-                               server_response=server_response,
-                               mailing=mailing, )
-        except smtplib.SMTPException as e:
-            Log.objects.create(status=Log.FAIL,
-                               server_response=str(e),
-                               mailing=mailing, )
+        # Проверить, нужно ли отправить сообщение в текущий момент времени
+        if mailing.next_send_time and current_datetime >= mailing.next_send_time:
+            mailing.status = Mailing.STARTED
+            clients = mailing.clients.all()
+            try:
+                server_response = send_mail(
+                    subject=mailing.message.title,
+                    message=mailing.message.message,
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[client.email for client in clients],
+                    fail_silently=False,
+                )
+                Log.objects.create(status=Log.SUCCESS,
+                                   server_response=server_response,
+                                   mailing=mailing, )
+            except smtplib.SMTPException as e:
+                Log.objects.create(status=Log.FAIL,
+                                   server_response=str(e),
+                                   mailing=mailing, )
 
-        # Определение следующего времени отправки на основе периодичности
-        if mailing.periodicity == Mailing.DAILY:
-            mailing.next_send_time += timedelta(days=1)
-        elif mailing.periodicity == Mailing.WEEKLY:
-            mailing.next_send_time += timedelta(weeks=1)
-        elif mailing.periodicity == Mailing.MONTHLY:
-            mailing.next_send_time += timedelta(days=30)
-        mailing.save()
+            # Обновление времени следующей отправки
+            if mailing.periodicity == Mailing.DAILY:
+                mailing.next_send_time += timedelta(days=1)
+            elif mailing.periodicity == Mailing.WEEKLY:
+                mailing.next_send_time += timedelta(weeks=1)
+            elif mailing.periodicity == Mailing.MONTHLY:
+                mailing.next_send_time += timedelta(days=30)
+
+            mailing.save()
 
 
 def start_scheduler():
@@ -59,7 +63,7 @@ def start_scheduler():
 
     # Проверка, добавлена ли задача уже
     if not scheduler.get_jobs():
-        scheduler.add_job(send_mailing, 'interval', seconds=10)
+        scheduler.add_job(send_mailing, 'interval', seconds=30)
 
     if not scheduler.running:
         scheduler.start()
