@@ -15,16 +15,15 @@
                     <p class="card-text">Описание: {{ mailing.description }}</p>
                     <p class="card-text">Статус: {{ mailing.status }}</p>
                     <p class="card-text">Периодичность: {{ mailing.periodicity }}</p>
-                    <p class="card-text">Дата создания: {{ mailing.created_at }}</p>
+                    <p class="card-text">Дата начала: {{ mailing.start_date }}</p>
+                    <p class="card-text">Следующая отправка: {{ mailing.message.next_send_time }}</p>
                     <p class="card-text">Дата окончания: {{ mailing.end_date }}</p>
                     <p class="card-text">Владелец: {{ mailing.owner }}</p>
                     <p class="card-text">Сообщение: {{ mailing.message }}</p>
                     <p class="card-text">Клиенты: </p>
                     {% for client in mailing.clients.all %}
-                        <p class="card-text"> {{ client.name }}</p>
+                        <p class="card-text"> {{ client.email }}</p>
                     {% endfor %}
-
-
                     <a href="{% url 'mailing:mailings_list' %}" class="btn btn-warning">Назад</a>
                 </div>
             </div>
