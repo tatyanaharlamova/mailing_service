@@ -21,6 +21,11 @@ def send_mailing():
     mailings = Mailing.objects.filter(next_send_time__lte=current_datetime,
                                       status__in=[Mailing.STARTED, Mailing.CREATED])
     for mailing in mailings:
+        # if mailing.end_date and current_datetime >= mailing.end_date:
+        #     mailing.status = Mailing.COMPLETED
+        #     mailing.save()
+        #     continue  # Пропустить отправку, если end_date достигнут
+
         mailing.status = Mailing.STARTED
         clients = mailing.clients.all()
         try:
@@ -39,18 +44,22 @@ def send_mailing():
                                server_response=str(e),
                                mailing=mailing, )
 
-        if mailing.periodicity == 'Раз в день':
+        # Определение следующего времени отправки на основе периодичности
+        if mailing.periodicity == Mailing.DAILY:
             mailing.next_send_time += timedelta(days=1)
-        elif mailing.regularity == 'Раз в неделю':
+        elif mailing.periodicity == Mailing.WEEKLY:
             mailing.next_send_time += timedelta(weeks=1)
-        elif mailing.regularity == 'Раз в месяц':
+        elif mailing.periodicity == Mailing.MONTHLY:
             mailing.next_send_time += timedelta(days=30)
         mailing.save()
 
 
 def start_scheduler():
     scheduler = BackgroundScheduler()
-    scheduler.add_job(send_mailing, 'interval', seconds=10)
+
+    # Проверка, добавлена ли задача уже
+    if not scheduler.get_jobs():
+        scheduler.add_job(send_mailing, 'interval', seconds=10)
 
     if not scheduler.running:
         scheduler.start()
