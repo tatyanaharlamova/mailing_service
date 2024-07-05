@@ -1,3 +1,5 @@
+import os
+
 from django.apps import AppConfig
 
 
@@ -6,5 +8,6 @@ class MailingConfig(AppConfig):
     name = 'mailing'
 
     def ready(self):
-        from mailing.services import start_scheduler
-        start_scheduler()
+        if os.environ.get('RUN_MAIN') == 'True':
+            from mailing.services import start_scheduler
+            start_scheduler()
